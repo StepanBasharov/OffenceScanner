@@ -14,22 +14,67 @@ type Scan struct {
 type SubDomain struct {
 	Domain   string
 	IPs      []net.IPAddr
-	Ports    []int
 	Services []Service
 }
 
 type Service struct {
+	Port    int
 	Name    string
 	Version string
 }
 
 func (s *Scan) GetBaseInfo() {
-	fmt.Printf("Scanning domain %s\n", s.MainDomain)
-	fmt.Printf("Subdomains count: %d\n", len(s.SubDomains))
-	for _, subdomain := range s.SubDomains {
-		fmt.Println("IP addresses:", len(subdomain.IPs))
-		fmt.Printf("Ports for domain %s: %d\n", subdomain.Domain, len(subdomain.Ports))
+	if len(s.SubDomains) == 0 || s.SubDomains == nil {
+		return
 	}
+
+	fmt.Printf("\n")
+	fmt.Printf("╔═══════════════════════════════════════════════════════════════╗\n")
+	fmt.Printf("║                    SCAN RESULTS SUMMARY                       ║\n")
+	fmt.Printf("╚═══════════════════════════════════════════════════════════════╝\n")
+	fmt.Printf("\n")
+	fmt.Printf("Main Domain: %s\n", s.MainDomain)
+	fmt.Printf("Total Subdomains: %d\n", len(s.SubDomains))
+	fmt.Printf("\n")
+	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	fmt.Printf("\n")
+
+	for idx, subdomain := range s.SubDomains {
+		fmt.Printf("┌─ Subdomain #%d: %s\n", idx+1, subdomain.Domain)
+
+		if len(subdomain.IPs) > 0 {
+			fmt.Printf("│  IP Addresses:\n")
+			for _, ip := range subdomain.IPs {
+				fmt.Printf("│    └─ %s\n", ip.String())
+			}
+		} else {
+			fmt.Printf("│  IP Addresses: None found\n")
+		}
+
+		if len(subdomain.Services) > 0 {
+			fmt.Printf("│  Services (%d found):\n", len(subdomain.Services))
+			for i, service := range subdomain.Services {
+				fmt.Printf("│    └─ [%d] Port: %-5d | Service: %-15s", i+1, service.Port, service.Name)
+				if service.Version != "" {
+					fmt.Printf(" | Version: %s\n", service.Version)
+				} else {
+					fmt.Printf("\n")
+				}
+			}
+		} else {
+			fmt.Printf("│  Services: None found\n")
+		}
+
+		if idx < len(s.SubDomains)-1 {
+			fmt.Printf("│\n")
+		} else {
+			fmt.Printf("└\n")
+		}
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	fmt.Printf("\n")
 }
 
 type Scanner interface {

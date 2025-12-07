@@ -2,7 +2,10 @@ module offsec-scan-go
 
 go 1.24.10
 
-require github.com/projectdiscovery/subfinder/v2 v2.10.1
+require (
+	github.com/projectdiscovery/subfinder/v2 v2.10.1
+	github.com/rs/zerolog v1.34.0
+)
 
 require (
 	aead.dev/minisign v0.2.0 // indirect
@@ -82,7 +85,7 @@ require (
 	github.com/projectdiscovery/utils v0.4.21 // indirect
 	github.com/refraction-networking/utls v1.7.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect

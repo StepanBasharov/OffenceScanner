@@ -29,6 +29,8 @@ func (sf *SubFinder) Scan(ctx context.Context, scanData *domain.Scan) error {
 		Timeout:            30,
 		MaxEnumerationTime: 10,
 		Threads:            10,
+		Silent:             true,
+		NoColor:            true,
 	}
 
 	subfinder, err := runner.NewRunner(options)
@@ -38,8 +40,6 @@ func (sf *SubFinder) Scan(ctx context.Context, scanData *domain.Scan) error {
 
 	output := &bytes.Buffer{}
 	var sourceMap map[string]map[string]struct{}
-
-	fmt.Println(scanData.MainDomain)
 
 	if sourceMap, err = subfinder.EnumerateSingleDomainWithCtx(ctx, scanData.MainDomain, []io.Writer{output}); err != nil {
 		return fmt.Errorf("could not enumerate subfinder %w", err)
