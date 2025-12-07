@@ -4,8 +4,6 @@
 *.dll
 *.so
 *.dylib
-scanner
-offsec-scan-go
 bin/
 dist/
 
