@@ -8,7 +8,9 @@ import (
 
 	"offsec-scan-go/internal/adapters/host"
 	"offsec-scan-go/internal/adapters/nmap"
+	sshbruteforce "offsec-scan-go/internal/adapters/ssh-brute"
 	"offsec-scan-go/internal/adapters/subfinder"
+	"offsec-scan-go/internal/domain"
 	"offsec-scan-go/internal/usecase"
 	"offsec-scan-go/pkg/logger"
 )
@@ -56,15 +58,11 @@ func main() {
 
 	showBanner()
 
-	subfinderAdapter := subfinder.NewSubFinder()
-	hostAdapter := host.NewHost()
-	nmapAdapter := nmap.NewNmap(log)
+	scanners := initScanners(log)
 
 	uc := usecase.NewBaseScanUseCase(
 		target,
-		&subfinderAdapter,
-		&hostAdapter,
-		&nmapAdapter,
+		scanners...,
 	)
 
 	if err := uc.Execute(context.Background()); err != nil {
@@ -74,4 +72,18 @@ func main() {
 		)
 		os.Exit(1)
 	}
+}
+
+func initScanners(log logger.Logger) []domain.Scanner {
+	scanners := make([]domain.Scanner, 0)
+
+	scanners = append(
+		scanners,
+		subfinder.NewSubFinder(),          // Инициализируем subfinder
+		host.NewHost(),                    // Инициализируем сканер по host
+		nmap.NewNmap(log),                 // Инициализируем сканер nmap
+		sshbruteforce.NewSSHBruteforcer(), // Инициализируем брутфорсер для ssh
+	)
+
+	return scanners
 }

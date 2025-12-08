@@ -3,8 +3,9 @@ package nmap
 import (
 	"encoding/xml"
 	"fmt"
-	"offsec-scan-go/internal/domain"
 	"strconv"
+
+	"offsec-scan-go/internal/domain"
 )
 
 type nmapRun struct {

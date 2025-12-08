@@ -2,6 +2,9 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"sync"
+
 	"offsec-scan-go/internal/domain"
 )
 
@@ -18,14 +21,47 @@ func NewBaseScanUseCase(target string, scanners ...domain.Scanner) *BaseScanUseC
 }
 
 func (bs *BaseScanUseCase) Execute(ctx context.Context) error {
+	var (
+		wg sync.WaitGroup
+	)
+
 	scanData := domain.Scan{MainDomain: bs.target}
 
 	for _, scanner := range bs.scanners {
-		if err := scanner.Scan(ctx, &scanData); err != nil {
-			return err
+		bruteChan, err := scanner.Scan(ctx, &scanData)
+		if err != nil {
+			return fmt.Errorf("scan: %w", err)
 		}
-		scanData.GetBaseInfo()
+
+		if bruteChan != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				for bruteData := range bruteChan {
+					if bruteData.IsValid {
+						fmt.Printf(
+							"Valid: %s - %s - %s:%d %s@%s \n",
+							bruteData.Service,
+							bruteData.Domain,
+							bruteData.IP,
+							bruteData.Port,
+							bruteData.Username,
+							bruteData.Password,
+						)
+					}
+				}
+			}()
+		}
+
+		if errGetReport := scanner.GetReport(); errGetReport != nil {
+			return fmt.Errorf("get report: %w", errGetReport)
+		}
 	}
+
+	wg.Wait()
+
+	scanData.GetBaseInfo()
 
 	return nil
 }

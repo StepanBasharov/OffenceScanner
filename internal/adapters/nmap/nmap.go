@@ -3,16 +3,18 @@ package nmap
 import (
 	"context"
 	"fmt"
-	"offsec-scan-go/internal/domain"
-	"offsec-scan-go/pkg/logger"
 	"os"
 	"os/exec"
 	"sync"
+
+	"offsec-scan-go/internal/domain"
+	"offsec-scan-go/pkg/logger"
 )
 
 type Nmap struct {
-	Name string
-	log  logger.Logger
+	Name        string
+	log         logger.Logger
+	ScanResults map[string][]domain.Service
 }
 
 type ErrNmap struct {
@@ -20,10 +22,11 @@ type ErrNmap struct {
 	targetDomain string
 }
 
-func NewNmap(log logger.Logger) Nmap {
-	return Nmap{
-		Name: "nmap",
-		log:  log,
+func NewNmap(log logger.Logger) *Nmap {
+	return &Nmap{
+		Name:        "nmap",
+		log:         log,
+		ScanResults: make(map[string][]domain.Service),
 	}
 }
 
@@ -31,7 +34,7 @@ func (n *Nmap) GetName() string {
 	return n.Name
 }
 
-func (n *Nmap) Scan(ctx context.Context, scanData *domain.Scan) error {
+func (n *Nmap) Scan(ctx context.Context, scanData *domain.Scan) (chan domain.BruteforcePart, error) {
 	var (
 		wg           sync.WaitGroup
 		errChan      = make(chan ErrNmap, len(scanData.SubDomains))
@@ -94,6 +97,7 @@ func (n *Nmap) Scan(ctx context.Context, scanData *domain.Scan) error {
 			if sd, exists := subdomainMap[domainName]; exists {
 				sd.Services = services
 			}
+			n.ScanResults[domainName] = services
 			mutex.Unlock()
 
 			if err := os.Remove(nmapScanFileName); err != nil {
@@ -122,6 +126,62 @@ func (n *Nmap) Scan(ctx context.Context, scanData *domain.Scan) error {
 			)
 		}
 	}
+
+	return nil, nil
+}
+
+func (n *Nmap) GetReport() error {
+	if len(n.ScanResults) == 0 {
+		return nil
+	}
+
+	totalServices := 0
+	for _, services := range n.ScanResults {
+		totalServices += len(services)
+	}
+	totalPorts := totalServices
+
+	fmt.Printf("\n")
+	fmt.Printf("╔═══════════════════════════════════════════════════════════════╗\n")
+	fmt.Printf("║                    NMAP SCAN REPORT                            ║\n")
+	fmt.Printf("╚═══════════════════════════════════════════════════════════════╝\n")
+	fmt.Printf("\n")
+	fmt.Printf("Total Targets Scanned: %d\n", len(n.ScanResults))
+	fmt.Printf("Total Services Found: %d\n", totalServices)
+	fmt.Printf("Total Open Ports: %d\n", totalPorts)
+	fmt.Printf("\n")
+	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	fmt.Printf("\n")
+
+	idx := 1
+	for domain, services := range n.ScanResults {
+		fmt.Printf("┌─ Target #%d: %s\n", idx, domain)
+
+		if len(services) > 0 {
+			fmt.Printf("│  Open Ports & Services (%d found):\n", len(services))
+			for i, service := range services {
+				fmt.Printf("│    └─ [%d] Port: %-5d | Service: %-15s", i+1, service.Port, service.Name)
+				if service.Version != "" {
+					fmt.Printf(" | Version: %s\n", service.Version)
+				} else {
+					fmt.Printf("\n")
+				}
+			}
+		} else {
+			fmt.Printf("│  Open Ports: None found\n")
+		}
+
+		if idx < len(n.ScanResults) {
+			fmt.Printf("│\n")
+		} else {
+			fmt.Printf("└\n")
+		}
+		idx++
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	fmt.Printf("\n")
 
 	return nil
 }

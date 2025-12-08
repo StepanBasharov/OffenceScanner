@@ -78,6 +78,7 @@ func (s *Scan) GetBaseInfo() {
 }
 
 type Scanner interface {
-	Scan(ctx context.Context, scanData *Scan) error
+	Scan(ctx context.Context, scanData *Scan) (chan BruteforcePart, error)
 	GetName() string
+	GetReport() error
 }
